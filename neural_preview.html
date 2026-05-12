@@ -1,0 +1,664 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧠 Nexo Neural</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101010;
+      --panel: #171717;
+      --panel-2: #202020;
+      --text: #f3f3f3;
+      --muted: #a8a8a8;
+      --line: #303030;
+      --accent: #19c37d;
+      --accent-2: #3b82f6;
+      --danger: #ff6b6b;
+      --node-new: #f59e0b;
+      --node-normal: #60a5fa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    .back-btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+    }
+    .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .main-layout {
+      display: flex;
+      flex: 1;
+      gap: 0;
+      overflow: hidden;
+    }
+    /* ─── Left panel (canvas) ─── */
+    .canvas-panel {
+      flex: 2;
+      position: relative;
+      background: #0a0a0f;
+      overflow: hidden;
+    }
+    #neuralCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    /* Central AI orb */
+    .ai-orb {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #19c37d88, #19c37d22);
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 24px #19c37d55;
+      pointer-events: none;
+      transition: box-shadow .4s;
+    }
+    .ai-orb.busy {
+      animation: orbSpin 1.4s linear infinite;
+      box-shadow: 0 0 40px #19c37d99;
+    }
+    @keyframes orbSpin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .ai-orb-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, calc(-50% + 44px));
+      font-size: 10px;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: .5px;
+      pointer-events: none;
+    }
+    /* ─── Right panel ─── */
+    .side-panel {
+      flex: 1;
+      min-width: 260px;
+      max-width: 340px;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    /* Status */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      box-shadow: 0 0 6px var(--accent);
+    }
+    .status-dot.busy { background: var(--node-new); box-shadow: 0 0 6px var(--node-new); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    /* Progress bars */
+    .bar-group { display: flex; flex-direction: column; gap: 10px; }
+    .bar-item label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .bar-track {
+      background: var(--line);
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width .8s ease;
+    }
+    .bar-fill.creativity { background: linear-gradient(90deg, #19c37d, #3b82f6); }
+    .bar-fill.potential  { background: linear-gradient(90deg, #3b82f6, #8b5cf6); }
+    .bar-fill.learning   { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .bar-fill.gpu  { background: linear-gradient(90deg, #19c37d, #06b6d4); }
+    .bar-fill.cpu  { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+    .bar-fill.ram  { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+    /* System stats */
+    .sys-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .sys-card {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+    .sys-card .val { font-size: 16px; font-weight: 700; color: var(--accent); }
+    .sys-card .lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    /* Internet search */
+    .internet-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .internet-input-row { display: flex; gap: 6px; }
+    .internet-input-row input {
+      flex: 1;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .internet-input-row input:focus { border-color: var(--accent-2); }
+    .btn-search {
+      background: var(--accent-2);
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-search:hover { opacity: .85; }
+    .btn-search:disabled { opacity: .45; cursor: default; }
+    .internet-result {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 90px;
+      overflow-y: auto;
+      display: none;
+    }
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--line);
+      border-radius: 8px;
+      padding: 18px 12px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .drop-zone.drag-over { border-color: var(--accent-2); background: #3b82f615; }
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-zone .icon { font-size: 22px; margin-bottom: 6px; }
+    .link-row { display: flex; gap: 6px; margin-top: 6px; }
+    .link-row input {
+      flex: 1;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .link-row input:focus { border-color: var(--accent); }
+    .btn-add-link {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: #06140e;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    /* Neurons counter */
+    .neuron-counter {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .neuron-counter span { color: var(--node-normal); font-weight: 700; font-size: 18px; }
+    /* Panel card wrapper */
+    .panel-card {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    /* Responsive */
+    @media (max-width: 700px) {
+      .main-layout { flex-direction: column; }
+      .canvas-panel { min-height: 280px; }
+      .side-panel { max-width: 100%; border-left: none; border-top: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="javascript:window.close()">← Volver al chat</a>
+  <h1>🧠 Nexo Neural</h1>
+</header>
+
+<div class="main-layout">
+
+  <!-- ═══ LEFT: Neural canvas ═══ -->
+  <div class="canvas-panel">
+    <canvas id="neuralCanvas"></canvas>
+    <div class="ai-orb" id="aiOrb"></div>
+    <div class="ai-orb-label" id="aiOrbLabel">NEXO</div>
+  </div>
+
+  <!-- ═══ RIGHT: Controls ═══ -->
+  <aside class="side-panel">
+
+    <!-- Activity -->
+    <div class="panel-card">
+      <div class="section-title">Actividad de la IA</div>
+      <div class="status-row">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Online</span>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="panel-card">
+      <div class="section-title">Métricas cognitivas</div>
+      <div class="bar-group">
+        <div class="bar-item">
+          <label><span>Creatividad</span><span id="creVal">0%</span></label>
+          <div class="bar-track"><div class="bar-fill creativity" id="creBar" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <label><span>Potencial</span><span id="potVal">0%</span></label>
+          <div class="bar-track"><div class="bar-fill potential" id="potBar" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <label><span>Aprendizaje</span><span id="leaVal">0%</span></label>
+          <div class="bar-track"><div class="bar-fill learning" id="leaBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System -->
+    <div class="panel-card">
+      <div class="section-title">Monitor del sistema</div>
+      <div class="sys-grid">
+        <div class="sys-card"><div class="val" id="gpuVal">—</div><div class="lbl">GPU %</div></div>
+        <div class="sys-card"><div class="val" id="cpuVal">—</div><div class="lbl">CPU %</div></div>
+        <div class="sys-card"><div class="val" id="ramVal">—</div><div class="lbl">RAM %</div></div>
+      </div>
+      <div class="bar-group" style="margin-top:10px;">
+        <div class="bar-item">
+          <label><span>GPU</span><span id="gpuPct">0%</span></label>
+          <div class="bar-track"><div class="bar-fill gpu" id="gpuBar" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <label><span>CPU</span><span id="cpuPct">0%</span></label>
+          <div class="bar-track"><div class="bar-fill cpu" id="cpuBar" style="width:0%"></div></div>
+        </div>
+        <div class="bar-item">
+          <label><span>RAM</span><span id="ramPct">0%</span></label>
+          <div class="bar-track"><div class="bar-fill ram" id="ramBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Internet search -->
+    <div class="panel-card">
+      <div class="section-title">🌐 Internet</div>
+      <div class="internet-box">
+        <div class="internet-input-row">
+          <input type="text" id="searchInput" placeholder="Buscar en internet...">
+          <button class="btn-search" id="searchBtn" onclick="doSearch()">Buscar</button>
+        </div>
+        <div class="internet-result" id="searchResult"></div>
+      </div>
+    </div>
+
+    <!-- Drop zone -->
+    <div class="panel-card">
+      <div class="section-title">📎 Alimentar la red</div>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" multiple onchange="handleFiles(this.files)">
+        <div class="icon">📂</div>
+        <div>Arrastra archivos aquí<br><span style="color:var(--accent);font-weight:600;">o haz clic para seleccionar</span></div>
+      </div>
+      <div class="link-row" style="margin-top:8px;">
+        <input type="text" id="linkInput" placeholder="Pega un link aquí...">
+        <button class="btn-add-link" onclick="handleLink()">+ Link</button>
+      </div>
+    </div>
+
+    <!-- Neuron counter -->
+    <div class="panel-card neuron-counter">
+      Neuronas activas: <span id="neuronCount">0</span>
+    </div>
+
+  </aside>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+const canvas  = document.getElementById('neuralCanvas');
+const ctx     = canvas.getContext('2d');
+const aiOrb   = document.getElementById('aiOrb');
+
+let nodes = [];       // {x, y, vx, vy, r, color, age, label}
+let busy  = false;
+
+const COLOR_NORMAL  = '#60a5fa';
+const COLOR_NEW     = '#f59e0b';
+const COLOR_CENTRAL = '#19c37d';
+const LINE_COLOR    = '#3b82f6';
+
+let metrics = { creativity: 12, potential: 18, learning: 8 };
+
+// ─── Canvas resize ───
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width;
+  canvas.height = rect.height;
+}
+window.addEventListener('resize', () => { resizeCanvas(); initNodes(); });
+resizeCanvas();
+
+// ─── Init nodes ───
+function initNodes() {
+  nodes = [];
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const count = Math.max(12, Math.floor(canvas.width * canvas.height / 14000));
+  for (let i = 0; i < count; i++) {
+    let x, y;
+    do {
+      x = Math.random() * canvas.width;
+      y = Math.random() * canvas.height;
+    } while (Math.hypot(x - cx, y - cy) < 80);
+    nodes.push(makeNode(x, y, COLOR_NORMAL));
+  }
+}
+
+function makeNode(x, y, color) {
+  return {
+    x, y,
+    vx: (Math.random() - .5) * .35,
+    vy: (Math.random() - .5) * .35,
+    r: 4 + Math.random() * 3,
+    color,
+    age: 0,
+    newborn: color === COLOR_NEW
+  };
+}
+
+// ─── Add neuron ───
+function addNeuron(label) {
+  const margin = 40;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  let x, y;
+  do {
+    x = margin + Math.random() * (canvas.width  - margin * 2);
+    y = margin + Math.random() * (canvas.height - margin * 2);
+  } while (Math.hypot(x - cx, y - cy) < 80);
+
+  const extra = 1 + Math.floor(Math.random() * 2); // 1-2 extra
+  for (let i = 0; i <= extra; i++) {
+    nodes.push(makeNode(
+      x + (Math.random() - .5) * 60,
+      y + (Math.random() - .5) * 60,
+      COLOR_NEW
+    ));
+  }
+  updateNeuronCount();
+  // Turn new nodes to normal after 3s
+  setTimeout(() => {
+    nodes.forEach(n => { if (n.newborn) { n.color = COLOR_NORMAL; n.newborn = false; } });
+  }, 3000);
+  boostMetrics();
+}
+
+function updateNeuronCount() {
+  document.getElementById('neuronCount').textContent = nodes.length;
+}
+
+// ─── Animation loop ───
+function animate() {
+  requestAnimationFrame(animate);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // Draw connections
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+      if (d < 130) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = LINE_COLOR + Math.floor((1 - d / 130) * 60).toString(16).padStart(2,'0');
+        ctx.lineWidth = .6;
+        ctx.stroke();
+      }
+    }
+    // Connection from each node to center
+    const dc = Math.hypot(nodes[i].x - cx, nodes[i].y - cy);
+    if (dc < 250) {
+      ctx.beginPath();
+      ctx.moveTo(nodes[i].x, nodes[i].y);
+      ctx.lineTo(cx, cy);
+      const alpha = Math.floor((1 - dc / 250) * 30).toString(16).padStart(2,'0');
+      ctx.strokeStyle = COLOR_CENTRAL + alpha;
+      ctx.lineWidth = .4;
+      ctx.stroke();
+    }
+  }
+
+  // Draw + move nodes
+  for (const n of nodes) {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0 || n.x > canvas.width)  n.vx *= -1;
+    if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+
+    // Glow
+    const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.5);
+    grd.addColorStop(0, n.color + 'cc');
+    grd.addColorStop(1, n.color + '00');
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fillStyle = n.color;
+    ctx.fill();
+  }
+}
+
+initNodes();
+updateNeuronCount();
+animate();
+
+// ─── Busy state ───
+function setBusy(val) {
+  busy = val;
+  aiOrb.classList.toggle('busy', val);
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.classList.toggle('busy', val);
+  txt.textContent = val ? 'Procesando...' : 'Online';
+}
+
+// ─── Metrics ───
+function boostMetrics() {
+  metrics.creativity = Math.min(100, metrics.creativity + 6 + Math.random() * 8);
+  metrics.potential  = Math.min(100, metrics.potential  + 4 + Math.random() * 6);
+  metrics.learning   = Math.min(100, metrics.learning   + 8 + Math.random() * 10);
+  updateBars();
+}
+
+function updateBars() {
+  const set = (id, val) => {
+    document.getElementById(id + 'Bar').style.width = val + '%';
+    document.getElementById(id + 'Val').textContent = Math.round(val) + '%';
+  };
+  set('cre', metrics.creativity);
+  set('pot', metrics.potential);
+  set('lea', metrics.learning);
+}
+updateBars();
+
+// ─── System stats (every 5s) ───
+async function fetchStats() {
+  try {
+    const r = await fetch('/api/system-stats');
+    if (!r.ok) return;
+    const d = await r.json();
+    const gpu = d.gpu_load ?? 0;
+    const cpu = d.cpu_load ?? 0;
+    const ram = d.ram_pct ?? 0;
+    document.getElementById('gpuVal').textContent = gpu;
+    document.getElementById('cpuVal').textContent = cpu;
+    document.getElementById('ramVal').textContent = ram;
+    document.getElementById('gpuBar').style.width = gpu + '%';
+    document.getElementById('gpuPct').textContent = gpu + '%';
+    document.getElementById('cpuBar').style.width = cpu + '%';
+    document.getElementById('cpuPct').textContent = cpu + '%';
+    document.getElementById('ramBar').style.width = ram + '%';
+    document.getElementById('ramPct').textContent = ram + '%';
+  } catch(_) {}
+}
+fetchStats();
+setInterval(fetchStats, 5000);
+
+// ─── Internet search ───
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  setBusy(true);
+  const resultBox = document.getElementById('searchResult');
+  resultBox.style.display = 'block';
+  resultBox.textContent = 'Buscando...';
+  try {
+    const r = await fetch('/api/neural/process', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({type:'search', content: q})
+    });
+    const d = await r.json();
+    resultBox.textContent = d.message || 'Procesado';
+    for (let i = 0; i < (d.added || 2); i++) addNeuron('search');
+  } catch(e) {
+    resultBox.textContent = 'Error: ' + e.message;
+  }
+  setBusy(false);
+  btn.disabled = false;
+}
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+// ─── File drop zone ───
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+});
+
+async function handleFiles(files) {
+  if (!files || !files.length) return;
+  setBusy(true);
+  for (const file of files) {
+    try {
+      const r = await fetch('/api/neural/process', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({type:'file', content: file.name})
+      });
+      const d = await r.json();
+      for (let i = 0; i < (d.added || 2); i++) addNeuron('file');
+    } catch(_) {
+      addNeuron('file');
+    }
+  }
+  setBusy(false);
+}
+
+// ─── Link ───
+async function handleLink() {
+  const url = document.getElementById('linkInput').value.trim();
+  if (!url) return;
+  setBusy(true);
+  try {
+    const r = await fetch('/api/neural/process', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({type:'link', content: url})
+    });
+    const d = await r.json();
+    for (let i = 0; i < (d.added || 2); i++) addNeuron('link');
+  } catch(_) {
+    addNeuron('link');
+  }
+  document.getElementById('linkInput').value = '';
+  setBusy(false);
+}
+</script>
+</body>
+</html>

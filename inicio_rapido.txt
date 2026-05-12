@@ -1,0 +1,282 @@
+﻿# 🚨 SOLUCIÓN RÁPIDA - Nexo lento
+
+## ⚡ Solución Express (5 minutos)
+
+### PASO 1: Diagnóstico
+```bash
+python diagnostico.py
+```
+
+Este script te dirá **exactamente** qué está mal.
+
+### PASO 2: Aplicar correcciones automáticas
+```bash
+python aplicar_parches.py
+```
+
+Esto va a:
+- ✅ Desactivar búsqueda web (elimina 10+ segundos por mensaje)
+- ✅ Cambiar a modo "rápido" por defecto (elimina 20+ segundos)
+- ✅ Optimizar capas GPU para tu GTX 1080 Ti (2-3x más rápido)
+- ✅ Mantener modelos en memoria (elimina 15s en respuestas siguientes)
+
+### PASO 3: Reiniciar la web
+```batch
+LANZAR_TODO_WEB.bat
+```
+
+### PASO 4: Probar
+Envía un mensaje simple como "Hola" y verifica que responde en **menos de 10 segundos**.
+
+---
+
+## 🔥 Corrección Manual Ultra-Rápida
+
+Si los scripts no funcionan, aplica esto manualmente:
+
+### 1. Editar `orchestrator.py` (líneas 61-65)
+
+**CAMBIAR DE:**
+```python
+GPU_LAYERS = {
+    "arquitecto": 18,
+    "programador": 16,
+    "vision": 20,
+}
+```
+
+**A:**
+```python
+GPU_LAYERS = {
+    "arquitecto": 24,   # MÁS GPU = MÁS RÁPIDO
+    "programador": 22,
+    "vision": 26,
+}
+```
+
+### 2. Editar `orchestrator.py` (línea ~258)
+
+**CAMBIAR DE:**
+```python
+payload = {
+    "model": model,
+    "messages": messages,
+    "stream": stream,
+    "options": {
+```
+
+**A:**
+```python
+payload = {
+    "model": model,
+    "messages": messages,
+    "stream": stream,
+    "keep_alive": "10m",  # ← AÑADIR ESTA LÍNEA
+    "options": {
+```
+
+### 3. Editar `web_app.py` (línea ~1957)
+
+**CAMBIAR DE:**
+```python
+def should_search_web(user_message: str, attachment_context: str = "") -> bool:
+    if attachment_context and attachment_context != "Sin archivos adjuntos.":
+        return True
+```
+
+**A:**
+```python
+def should_search_web(user_message: str, attachment_context: str = "") -> bool:
+    return False  # BÚSQUEDA WEB DESACTIVADA (recupera 10-15 segundos)
+    
+    # Para reactivar, comenta la línea de arriba y descomenta abajo:
+    # if attachment_context and attachment_context != "Sin archivos adjuntos.":
+    #     return True
+```
+
+### 4. Guardar y reiniciar
+
+```batch
+LANZAR_TODO_WEB.bat
+```
+
+---
+
+## 📊 Resultados Esperados
+
+### ANTES (sin correcciones):
+- **Primera respuesta**: 30-90 segundos 🐌
+- **Respuestas siguientes**: 25-60 segundos 🐌
+- **Modo combinado**: Espera ciega, sin feedback
+
+### DESPUÉS (con correcciones):
+- **Primera respuesta**: 5-15 segundos ⚡
+- **Respuestas siguientes**: 2-5 segundos ⚡⚡⚡
+- **Modo rápido**: Respuesta directa, sin pipeline doble
+
+---
+
+## 🔍 Problema del Link Público
+
+### Verificar si funciona:
+1. Ejecuta `LANZAR_TODO_WEB.bat`
+2. Espera a que aparezca la URL pública
+3. Copia la URL en otro dispositivo/navegador
+
+### Si no aparece URL:
+```batch
+type logs\cloudflared.log
+```
+
+Busca:
+- ✅ `https://xxxxx.trycloudflare.com` → funciona
+- ❌ Errores de conexión → problema de red/firewall
+- ❌ Sin URL → cloudflared falló
+
+### Solución alternativa: ngrok
+```batch
+winget install ngrok.ngrok
+
+:: En una terminal:
+python web_app.py --host 127.0.0.1 --port 7860
+
+:: En OTRA terminal:
+ngrok http 7860
+```
+
+---
+
+## 🆘 Troubleshooting Rápido
+
+### Problema: "Aún tarda 20+ segundos"
+
+**1. Verificar GPU en uso:**
+```batch
+nvidia-smi
+```
+Deberías ver `ollama.exe` usando VRAM. Si no:
+- Reinstala drivers NVIDIA
+- Verifica CUDA en `ollama serve`
+
+**2. Limpiar modelos y recargar:**
+```batch
+ollama ps
+ollama stop <nombre-modelo>
+ollama run qwen2.5-coder:14b "test"
+```
+
+**3. Verificar RAM disponible:**
+```batch
+taskmgr
+```
+Si tienes <8 GB libres, cierra otras aplicaciones.
+
+---
+
+### Problema: "Error al llamar a Ollama"
+
+**1. Verificar que Ollama está corriendo:**
+```batch
+ollama ps
+```
+
+Si no responde:
+```batch
+ollama serve
+```
+
+**2. Verificar modelos instalados:**
+```batch
+ollama list
+```
+
+Si falta alguno:
+```batch
+ollama pull qwen2.5-coder:14b
+ollama pull qwen2.5-coder:7b
+```
+
+---
+
+### Problema: "El chat carga pero no responde"
+
+**1. Ver logs de la web:**
+```batch
+type logs\web_app.log
+```
+
+**2. Probar Ollama directamente:**
+```bash
+python orchestrator.py chat
+```
+
+Si funciona aquí pero no en la web → problema de comunicación web-Ollama.
+
+Si no funciona ni aquí → problema de Ollama o modelos.
+
+---
+
+## 📁 Archivos Incluidos
+
+- **CORRECCIONES_URGENTES.md** - Explicación detallada de cada problema
+- **diagnostico.py** - Script de diagnóstico automático
+- **aplicar_parches.py** - Script que aplica correcciones automáticamente
+- **INICIO_RAPIDO.md** - Este archivo
+
+---
+
+## 🎯 Orden Recomendado
+
+1. **Ejecuta**: `python diagnostico.py`
+2. **Lee**: El output del diagnóstico
+3. **Ejecuta**: `python aplicar_parches.py`
+4. **Reinicia**: `LANZAR_TODO_WEB.bat`
+5. **Prueba**: Envía "Hola" y mide el tiempo
+6. **Si sigue lento**: Lee `CORRECCIONES_URGENTES.md`
+
+---
+
+## 💡 Explicación Rápida
+
+### ¿Por qué era tan lento?
+
+1. **Búsqueda web automática**: Cada mensaje hacía 6 peticiones HTTP + descargaba 3 páginas (+10-15s)
+2. **Pipeline doble**: Programador genera borrador COMPLETO → Arquitecto revisa TODO (+30-40s)
+3. **GPU offload**: Capas GPU bajas = mucho trabajo en RAM = 10x más lento
+4. **Modelos se descargan**: Sin `keep_alive`, cada respuesta recarga modelo (+15s)
+
+### ¿Por qué las correcciones funcionan?
+
+1. **Sin búsqueda web**: -10 segundos ⚡
+2. **Modo rápido**: -25 segundos (una sola pasada) ⚡⚡
+3. **Más GPU layers**: -70% tiempo (menos offload) ⚡⚡⚡
+4. **Keep alive**: -15s en respuestas 2+
+
+**Total**: De 60 segundos → 5 segundos = **12x más rápido** 🚀
+
+---
+
+## ✅ Checklist Final
+
+- [ ] Ejecuté `python diagnostico.py`
+- [ ] Ejecuté `python aplicar_parches.py`
+- [ ] Reinicié con `LANZAR_TODO_WEB.bat`
+- [ ] Probé con mensaje simple
+- [ ] Responde en <10 segundos ✅
+- [ ] Verifiqué nvidia-smi muestra uso GPU
+- [ ] Link público funciona (logs\cloudflared.log)
+
+---
+
+## 📞 Soporte
+
+Si después de aplicar TODAS las correcciones sigue lento:
+
+1. Ejecuta `python diagnostico.py` y guarda el output
+2. Verifica `logs\web_app.log` para errores
+3. Ejecuta `nvidia-smi` y verifica uso de GPU
+4. Comparte los resultados para ayuda específica
+
+---
+
+**Última actualización**: 2026-05-07

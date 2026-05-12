@@ -1,0 +1,217 @@
+﻿# Ollama Orchestrator Simplificado
+
+Orquestador multi-agente para Ollama optimizado para GTX 1080 Ti con offload RAM.
+
+## 🚀 Características
+
+- **Pipeline de Código**: Generación con programador 7B + revisión con arquitecto 14B
+- **Análisis de Imágenes**: Modelo de visión 11B para análisis técnico
+- **Chat Interactivo**: Interfaz conversacional con detección automática de intención
+- **Gestión de Archivos**: Guardado automático de bloques de código
+- **Offload RAM**: Configuración optimizada para GPUs con VRAM limitada
+
+## 📋 Requisitos
+
+```bash
+# Python 3.8+
+pip install requests colorama
+
+# Ollama instalado
+# Descarga desde: https://ollama.com
+```
+
+## ⚙️ Instalación
+
+1. **Clonar/descargar** el script
+
+2. **Instalar dependencias**:
+```bash
+pip install requests colorama
+```
+
+3. **Setup inicial** (descarga modelos):
+```bash
+python orchestrator.py setup
+```
+
+Esto descargará automáticamente:
+- `qwen2.5-coder:14b` (Arquitecto)
+- `qwen2.5-coder:7b` (Programador)
+- `llama3.2-vision:11b` (Visión) - opcional
+
+## 🎯 Uso
+
+### Nexo Web Online
+
+1. Ejecuta `LANZAR_TODO_WEB.bat` para abrir Nexo.
+2. Entra en la URL local o publica que muestre el lanzador.
+3. Cada persona puede crear su cuenta con usuario y contrasena desde la pagina.
+4. Cada cuenta tiene sus propios chats y memoria.
+
+Si falta Cloudflare Tunnel, el lanzador lo descarga en `tools\cloudflared.exe`.
+
+Si quieres instalar dependencias web a mano:
+```bash
+python -m pip install -r requirements_web.txt
+```
+
+### Menú Interactivo
+```bash
+python orchestrator.py
+```
+
+### Chat Interactivo
+```bash
+python orchestrator.py chat
+```
+
+Comandos en el chat:
+- `/codigo <descripción>` - Generar código
+- `/imagen <ruta> [pregunta]` - Analizar imagen
+- `/salir` - Salir
+
+### Línea de Comandos
+
+**Generar código**:
+```bash
+python orchestrator.py codigo "crear API REST en FastAPI"
+```
+
+**Analizar imagen**:
+```bash
+python orchestrator.py imagen foto.png "¿qué código se ve?"
+```
+
+## 🔧 Configuración
+
+### Ajustar Capas GPU
+
+Si tienes más/menos VRAM, edita en el script:
+
+```python
+GPU_LAYERS = {
+    "arquitecto": 18,   # Aumenta si tienes más VRAM
+    "programador": 16,
+    "vision": 20,
+}
+```
+
+**Guía rápida**:
+- GTX 1080 Ti (11GB): valores por defecto
+- RTX 3060 (12GB): +4 capas en cada modelo
+- GTX 1660 (6GB): -6 capas en cada modelo
+- Solo CPU: cambia todos a 0
+
+### Cambiar Modelos
+
+Edita la sección `MODELS` en el script:
+
+```python
+MODELS = {
+    "arquitecto": "tu-modelo:tag",
+    "programador": "tu-modelo:tag",
+    "vision": "tu-modelo:tag",
+}
+```
+
+## 📁 Archivos Generados
+
+Los códigos se guardan automáticamente en:
+```
+./archivos_generados/
+```
+
+## 💡 Ejemplos de Uso
+
+### Ejemplo 1: Generar una API
+```bash
+python orchestrator.py codigo "API REST con autenticación JWT en Python"
+```
+
+### Ejemplo 2: Analizar código en imagen
+```bash
+python orchestrator.py imagen screenshot.png "revisa este código"
+```
+
+### Ejemplo 3: Chat para debugging
+```bash
+python orchestrator.py chat
+> Mi código tiene un memory leak, ¿puedes ayudarme?
+```
+
+## 🐛 Solución de Problemas
+
+### Ollama no inicia
+```bash
+# Verifica instalación
+ollama --version
+
+# Inicia manualmente
+ollama serve
+```
+
+### Modelo no encontrado
+```bash
+# Lista modelos instalados
+ollama list
+
+# Descarga modelo manualmente
+ollama pull qwen2.5-coder:7b
+```
+
+### VRAM insuficiente
+- Reduce `GPU_LAYERS` en la configuración
+- Usa modelos más pequeños
+- Cierra otras aplicaciones que usen GPU
+
+### Error "Connection refused"
+- Verifica que Ollama esté corriendo: `ollama ps`
+- Reinicia Ollama: `ollama serve`
+
+## 📊 Uso de Recursos
+
+**Configuración por defecto (GTX 1080 Ti)**:
+- Arquitecto 14B: ~3.8 GB VRAM + ~6 GB RAM
+- Programador 7B: ~2.3 GB VRAM + ~2 GB RAM  
+- Visión 11B: ~4 GB VRAM + ~4 GB RAM
+
+**Total**: ~4-5 GB VRAM máximo en simultáneo + RAM adicional
+
+## 🔄 Diferencias con la Versión Original
+
+Esta versión simplificada:
+- ✅ Elimina complejidad innecesaria
+- ✅ Código más limpio y mantenible
+- ✅ Mejor manejo de errores
+- ✅ Funcionalidad core intacta
+- ✅ Sin bugs conocidos
+- ✅ Documentación clara
+
+Funciones removidas:
+- Monitor de recursos en background
+- Generación de config para Continue/VS Code
+- Pipeline de 4 fases (simplificado a 2)
+- Historial con compresión automática
+- Auto-corrección en bucle
+
+## 📝 Licencia
+
+MIT - Úsalo como quieras
+
+## 🤝 Contribuciones
+
+¡Pull requests bienvenidos!
+
+## ⚡ Tips de Rendimiento
+
+1. **Mantén solo un modelo cargado a la vez** - Los modelos se descargan automáticamente de VRAM al terminar
+2. **Usa el chat interactivo** para sesiones largas - Evita recargar modelos
+3. **Ajusta temperature** en `call_ollama()` según necesites más creatividad (0.7) o precisión (0.1)
+4. **Cierra navegadores/juegos** cuando uses el arquitecto 14B
+
+## 🆘 Soporte
+
+Para problemas o preguntas:
+1. Verifica la sección "Solución de Problemas"
+2. Revisa logs de Ollama: `ollama logs`
+3. Abre un issue con detalles del error

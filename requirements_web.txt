@@ -1,0 +1,17 @@
+requests
+colorama
+flask
+waitress
+openai
+python-dotenv
+ddgs
+beautifulsoup4
+pypdf
+pillow
+opencv-python
+python-docx
+openpyxl
+python-pptx
+moviepy
+imageio-ffmpeg
+py7zr

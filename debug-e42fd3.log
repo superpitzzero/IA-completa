@@ -1,0 +1,1 @@
+{"sessionId": "e42fd3", "runId": "pre-fix", "hypothesisId": "H-ENC-1", "location": "diagnostico.py:configure_console_encoding", "message": "Configured console encoding (best-effort)", "data": {"python": "3.14.4", "platform": "win32"}, "timestamp": 1778160613970, "id": "log_1778160613970_cf118c79da"}

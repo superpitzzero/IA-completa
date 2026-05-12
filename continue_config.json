@@ -1,0 +1,126 @@
+{
+  "models": [
+    {
+      "title": "🧠 Pipeline Unificado (7B→14B→1.5B→14B)",
+      "model": "qwen2.5-coder:14b-instruct-q5_K_M",
+      "provider": "ollama",
+      "apiBase": "http://localhost:11434",
+      "systemMessage": "Eres el Arquitecto Senior. Recibes un resumen técnico de puntos clave\ny debes convertirlo en una respuesta COMPLETA, detallada y lista para producción.\nIncluye siempre:\n- Explicación clara de cada punto\n- El código final corregido y completo (si aplica)\n- Recomendaciones de implementación\n- Posibles efectos secundarios o consideraciones adicionales\nSé exhaustivo y técnico. Esta es la respuesta definitiva que verá el usuario.",
+      "contextLength": 32768,
+      "completionOptions": {
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "num_predict": 4096,
+        "num_gpu": 18
+      }
+    },
+    {
+      "title": "🏗️ Arquitecto (14B) — Revisión Profunda",
+      "model": "qwen2.5-coder:14b-instruct-q5_K_M",
+      "provider": "ollama",
+      "apiBase": "http://localhost:11434",
+      "systemMessage": "Eres un Ingeniero de Software Principal y Auditor de Seguridad con 20 años de experiencia.\nTu objetivo NO es ser amigable: garantiza que el código sea de nivel producción, eficiente y seguro.\n\nResponsabilidades:\n1. Análisis Crítico: errores lógicos, redundancias, violaciones SOLID/DRY.\n2. Seguridad: vulnerabilidades, fugas de memoria, inyección de datos.\n3. Rendimiento: optimización de algoritmos y gestión de recursos.\n4. Refactorización: si el código es funcional pero sucio, reescríbelo.\n\nFormato OBLIGATORIO:\n🔍 Diagnóstico: resumen técnico en 2 líneas.\n⚠️  Bugs/Riesgos: lista numerada de fallos REALES.\n🚀 Código Optimizado: bloque de código completo y corregido.\n💡 Lección Técnica: una frase explicando por qué tu solución es superior.\n\nRegla de oro: Si el código es perfecto, responde solo: 'Código validado ✅'.\nSi no, destrúyelo y reconstrúyelo sin pedir perdón.",
+      "contextLength": 32768,
+      "completionOptions": {
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "num_predict": 4096,
+        "num_gpu": 18
+      }
+    },
+    {
+      "title": "🔨 Constructor (7B) — Generación Rápida",
+      "model": "qwen2.5-coder:7b",
+      "provider": "ollama",
+      "apiBase": "http://localhost:11434",
+      "systemMessage": "Eres un programador experto y eficiente.\nEscribe código COMPLETO, funcional, limpio y bien comentado.\nCuando te pidan resolver un problema, implementa la solución ENTERA sin truncar.\nSi el usuario no especifica lenguaje, usa el más apropiado.\nResponde siempre en español salvo que se te pida otro idioma.",
+      "contextLength": 32768,
+      "completionOptions": {
+        "temperature": 0.3,
+        "top_p": 0.95,
+        "num_predict": 2048,
+        "num_gpu": 16
+      }
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "⚡ Autocomplete (1.5B)",
+    "model": "qwen2.5-coder:1.5b",
+    "provider": "ollama",
+    "apiBase": "http://localhost:11434"
+  },
+  "tabAutocompleteOptions": {
+    "useCopyBuffer": false,
+    "maxPromptTokens": 1024,
+    "prefixPercentage": 0.85
+  },
+  "contextProviders": [
+    {
+      "name": "code",
+      "params": {}
+    },
+    {
+      "name": "docs",
+      "params": {}
+    },
+    {
+      "name": "diff",
+      "params": {}
+    },
+    {
+      "name": "terminal",
+      "params": {}
+    },
+    {
+      "name": "problems",
+      "params": {}
+    },
+    {
+      "name": "folder",
+      "params": {}
+    },
+    {
+      "name": "codebase",
+      "params": {}
+    }
+  ],
+  "slashCommands": [
+    {
+      "name": "audit",
+      "description": "Audita el código con el Arquitecto (14B)",
+      "step": "ShareContextWithModel",
+      "params": {
+        "model": "qwen2.5-coder:14b-instruct-q5_K_M",
+        "prompt": "Eres un Ingeniero de Software Principal y Auditor de Seguridad con 20 años de experiencia.\nTu objetivo NO es ser amigable: garantiza que el código sea de nivel producción, eficiente y seguro.\n\nResponsabilidades:\n1. Análisis Crítico: errores lógicos, redundancias, violaciones SOLID/DRY.\n2. Seguridad: vulnerabilidades, fugas de memoria, inyección de datos.\n3. Rendimiento: optimización de algoritmos y gestión de recursos.\n4. Refactorización: si el código es funcional pero sucio, reescríbelo.\n\nFormato OBLIGATORIO:\n🔍 Diagnóstico: resumen técnico en 2 líneas.\n⚠️  Bugs/Riesgos: lista numerada de fallos REALES.\n🚀 Código Optimizado: bloque de código completo y corregido.\n💡 Lección Técnica: una frase explicando por qué tu solución es superior.\n\nRegla de oro: Si el código es perfecto, responde solo: 'Código validado ✅'.\nSi no, destrúyelo y reconstrúyelo sin pedir perdón."
+      }
+    },
+    {
+      "name": "fix",
+      "description": "Corrige errores rápidamente con el Constructor (7B)",
+      "step": "ShareContextWithModel"
+    },
+    {
+      "name": "comment",
+      "description": "Comenta y documenta el código",
+      "step": "CommentCode"
+    },
+    {
+      "name": "test",
+      "description": "Genera tests unitarios",
+      "step": "WriteTestsStep"
+    }
+  ],
+  "customCommands": [
+    {
+      "name": "review",
+      "prompt": "Revisa este código como si fuera una pull request de nivel producción. Sé estricto.",
+      "description": "Code review estilo PR profesional"
+    }
+  ],
+  "allowAnonymousTelemetry": false,
+  "ui": {
+    "codeBlockToolbarPosition": "top",
+    "fontSize": 14,
+    "displayRawMarkdown": false
+  }
+}
